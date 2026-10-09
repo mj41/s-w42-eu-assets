@@ -10,7 +10,7 @@ machine). Put any picture on the robot's screen (a screenshot taken over USB, a 
 recording, a mock-up), turn its head, move the camera round it, light its LEDs.
 
 ```bash
-go install github.com/mj41/s-w42-eu-assets/cmd/robot3d@latest
+GOPRIVATE=github.com/mj41/* go install github.com/mj41/s-w42-eu-assets/cmd/robot3d@latest   # a private repo
 
 s-w42-eu-usb screenshot -o screen.jpg                  # the robot's screen over USB (320x240)
 robot3d -screen screen.jpg -o robot.png                # the robot showing it (800x800, transparent)
