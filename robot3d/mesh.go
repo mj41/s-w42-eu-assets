@@ -16,7 +16,8 @@ const (
 	coreFront   = 33.6        // the yaw axis is 33.6 behind the front
 	coreD       = 15.5        // the CoreS3's depth
 	bodyFront   = coreFront - coreD
-	coreR       = 3.5 // the CoreS3's rounded edges
+	coreR       = 3.5 // the CoreS3's rounded edges: the front and the corners
+	coreBackR   = 0.6 // its back's edges, against the main body: a thin seam
 	screenW     = 40.8
 	screenH     = 30.6
 	screenCY    = 1.0 // the screen's centre above the CoreS3's centre
@@ -104,7 +105,7 @@ func mesh() []tri {
 				m = append(m, t)
 			}
 		}
-		add(roundedBox(V3{27, 27, coreD / 2}, coreR, 6, partCore, matCore), coreCentre)
+		add(roundedBoxBack(V3{27, 27, coreD / 2}, coreR, coreBackR, 6, partCore, matCore), coreCentre)
 		add(roundedBox(V3{(pitchServoX1 - pitchServoX0) / 2, (pitchServoY1 - pitchServoY0) / 2, (pitchServoZ1 - pitchServoZ0) / 2}, 0.8, 2, partServo, matPitchServo),
 			V3{(pitchServoX0 + pitchServoX1) / 2, (pitchServoY0 + pitchServoY1) / 2, (pitchServoZ0 + pitchServoZ1) / 2})
 		for _, x := range []float64{-26.1, 26.1} {
@@ -134,28 +135,53 @@ func quad(a, b, c, d vert, part, mat int) []tri {
 // roundedBox is a box of half sizes h around the origin with edges rounded by r: a grid on each
 // face, pushed out from the inner box, denser where the edges bend.
 func roundedBox(h V3, r float64, steps int, part, mat int) []tri {
+	return roundedBoxBack(h, r, r, steps, part, mat)
+}
+
+// roundedBoxBack is roundedBox with the back face's edges (-Z) rounded by rb: the CoreS3 is
+// rounded at its front and its corners, and nearly square where it meets the main body (M5Stack's
+// photos show a thin seam there, not a groove).
+func roundedBoxBack(h V3, r, rb float64, steps int, part, mat int) []tri {
 	in := V3{h.X - r, h.Y - r, h.Z - r}
-	coords := func(inner float64) []float64 {
+	inBack := -(h.Z - rb)                       // the inner box's back
+	side := func(inner, rr float64) []float64 { // from the edge to the inner box, one side
 		var c []float64
 		for k := steps; k >= 1; k-- {
-			c = append(c, -(inner + r*math.Tan(float64(k)*math.Pi/4/float64(steps))))
+			c = append(c, inner+rr*math.Tan(float64(k)*math.Pi/4/float64(steps)))
 		}
-		c = append(c, -inner, inner)
-		for k := 1; k <= steps; k++ {
-			c = append(c, inner+r*math.Tan(float64(k)*math.Pi/4/float64(steps)))
+		return c
+	}
+	coords := func(axis int) []float64 {
+		lo, hi, rlo := -[3]float64{in.X, in.Y, in.Z}[axis], [3]float64{in.X, in.Y, in.Z}[axis], r
+		if axis == 2 {
+			lo, rlo = inBack, rb
+		}
+		var c []float64
+		for _, v := range side(-lo, rlo) {
+			c = append(c, -v)
+		}
+		c = append(c, lo, hi)
+		back := side(hi, r)
+		for k := len(back) - 1; k >= 0; k-- {
+			c = append(c, back[k])
 		}
 		return c
 	}
 	get := func(v V3, i int) float64 { return [3]float64{v.X, v.Y, v.Z}[i] }
 	point := func(p V3) vert {
-		q := V3{clamp(p.X, -in.X, in.X), clamp(p.Y, -in.Y, in.Y), clamp(p.Z, -in.Z, in.Z)}
-		n := p.Sub(q).Norm()
-		return vert{q.Add(n.Mul(r)), n}
+		q := V3{clamp(p.X, -in.X, in.X), clamp(p.Y, -in.Y, in.Y), clamp(p.Z, inBack, in.Z)}
+		d := p.Sub(q).Norm()
+		rz := r
+		if p.Z < 0 {
+			rz = rb
+		}
+		n := V3{d.X / r, d.Y / r, d.Z / rz}.Norm() // the normal of the rounding (an ellipse at the back)
+		return vert{q.Add(V3{d.X * r, d.Y * r, d.Z * rz}), n}
 	}
 	var out []tri
 	for axis := 0; axis < 3; axis++ {
 		u, v := (axis+1)%3, (axis+2)%3
-		cu, cv := coords(get(in, u)), coords(get(in, v))
+		cu, cv := coords(u), coords(v)
 		for _, s := range []float64{-1, 1} {
 			for i := 0; i+1 < len(cu); i++ {
 				for j := 0; j+1 < len(cv); j++ {
@@ -172,6 +198,12 @@ func roundedBox(h V3, r float64, steps int, part, mat int) []tri {
 					out = append(out, quad(c[0], c[1], c[2], c[3], part, mat)...)
 				}
 			}
+		}
+	}
+	for i, t := range out { // where the corners meet a smaller back rounding, a tiny triangle can turn
+		face := t.v[1].p.Sub(t.v[0].p).Cross(t.v[2].p.Sub(t.v[0].p))
+		if face.Dot(t.v[0].n.Add(t.v[1].n).Add(t.v[2].n)) < 0 {
+			out[i].v[1], out[i].v[2] = t.v[2], t.v[1]
 		}
 	}
 	return out
