@@ -61,3 +61,33 @@ func Parts() []Part {
 	}
 	return out
 }
+
+// Surface is how a part looks at a point at rest (p and n in the robot's rest space, as Parts
+// gives them), before the lights: its base colour with the details the renderer draws (the glass
+// front and the red ring, the sensors' dots, the vents, the ports and buttons, the labels and the
+// back panel's sticker and ports; the screen and the LEDs off), and whether it is glass (shiny,
+// reflecting the room). For textures in other renderers.
+func Surface(part string, p, n V3) (c color.RGBA, glass bool) {
+	var sc scene
+	var sf surface
+	switch part {
+	case "core":
+		sf = sc.core(p, n)
+	case "body":
+		sf = sc.body(p, n, matBody)
+	case "back-panel":
+		sf = sc.body(p, n, matBackPanel)
+	case "led-bar-left", "led-bar-right":
+		sf = sc.body(p, n, matBar)
+	case "plate":
+		sf = material(matPlate)
+	case "servo":
+		sf = material(matServo)
+	case "servo-cover":
+		sf = material(matServoCover)
+	default:
+		sf = material(-1)
+	}
+	v := sf.albedo.add(sf.emissive) // the red ring glows a little
+	return color.RGBA{q8(v.R), q8(v.G), q8(v.B), 255}, sf.glass
+}
