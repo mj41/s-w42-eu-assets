@@ -10,7 +10,7 @@ machine). Put any picture on the robot's screen (a screenshot taken over USB, a 
 recording, a mock-up), turn its head, move the camera round it, light its LEDs.
 
 ```bash
-GOPRIVATE=github.com/mj41/* go install github.com/mj41/s-w42-eu-assets/cmd/robot3d@latest   # a private repo
+go install github.com/mj41/s-w42-eu-assets/cmd/robot3d@latest
 
 s-w42-eu-usb screenshot -o screen.jpg                  # the robot's screen over USB (320x240)
 robot3d -screen screen.jpg -o robot.png                # the robot showing it (800x800, transparent)
@@ -67,4 +67,7 @@ Technology. This project is independent of both.
 
 ## License
 
-Apache License 2.0, see [LICENSE](LICENSE).
+Apache License 2.0, see [LICENSE](LICENSE), except M5Stack's StackChan structure files in
+[`robot3d/m5stack/`](robot3d/m5stack/): MIT, Copyright (c) 2021 M5Stack, see
+[their LICENSE](robot3d/m5stack/LICENSE). A program built from this repository carries those
+files (embedded in the robot3d package), so it carries M5Stack's notice too.
