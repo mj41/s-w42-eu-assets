@@ -23,8 +23,12 @@ var (
 	colPortDark = hex(0x1c1d20)
 	colPortBlue = hex(0x2f9be0)
 	colServo    = hex(0x50555b) // the open back: the servo inside
-	colBarOff   = hex(0xeef3f5) // the LED bar, unlit
-	colRing     = hex(0xc4432c) // the red ring under the screen
+	colBarOff   = hex(0xa6d6d8) // the LED bar, unlit: a mint light guide (M5Stack's photos)
+	colRing     = hex(0x9a6a3e) // the camera's bronze ring under the screen (M5Stack's photos)
+	colLens     = hex(0x3a4c56) // the camera's lens
+	colSensor   = hex(0x7fb6bd) // the light and proximity sensor's two windows: teal
+	colBoard    = hex(0x1f3a31) // the main board, seen through the open back: green
+	colPortTeal = hex(0x2a9da5) // port C (UART) on the head's top
 	colPlate    = hex(0x5b6067)
 	colDisc     = hex(0xc9ccd0)
 	colMotor    = hex(0x1d1e21) // the servos themselves: black
@@ -73,18 +77,39 @@ func (s *scene) core(p, n V3) surface {
 				frontMarks(p, &sf)
 			}
 		}
-	case n.X > 0.97 && p.Z > -coreD/2+1.5 && p.Z < coreD/2-2: // left: vents, a hex grid of holes
-		if p.Y > -6 && p.Y < 19 {
-			const step = 2.1
-			row := math.Round(p.Y / (step * 0.866))
-			off := 0.0
+	case n.X > 0.97: // left: the vents, a narrow staggered band toward the back (M5Stack's photos)
+		if p.Y > -15.6 && p.Y < 16 && p.Z > -6.3 && p.Z < 1.1 {
+			const step = 2.6
+			row := math.Round(p.Y / step)
+			cols := [2]float64{-5.6, -1.6}
 			if int(row)%2 != 0 {
-				off = step / 2
+				cols = [2]float64{-3.6, 0.4}
 			}
-			cz := math.Round((p.Z-off)/step)*step + off
-			if math.Hypot(p.Z-cz, p.Y-row*step*0.866) < 0.5 {
-				sf.albedo, sf.spec = colVent, 0
+			for _, cz := range cols {
+				if math.Hypot(p.Z-cz, p.Y-row*step) < 0.5 {
+					sf.albedo, sf.spec = colVent, 0
+				}
 			}
+		}
+	case n.Y < -0.97: // the bottom: the microSD slot, a hole, two slits, the reboot button (M5Stack's photo)
+		switch {
+		case box(p.X, p.Z, -13, -0.5, 0, 0.5):
+			sf.albedo, sf.spec = colPortDark, 0.1
+		case math.Hypot(p.X-6.8, p.Z-3.35) < 0.35:
+			sf.albedo = colPortDark
+		case box(p.X, p.Z, 6.0, -4.6, 6.5, -3.0), box(p.X, p.Z, 7.1, -4.6, 7.6, -3.0):
+			sf.albedo = colPortDark
+		}
+		if d := math.Hypot(p.X-14.2, p.Z-1.45); d < 3 {
+			sf.albedo = colShell.mul(0.95)
+			if d > 2.6 {
+				sf.albedo = colPortDark
+			}
+		}
+	case n.Y > 0.97 && p.X > -15.6 && p.X < 0.5 && p.Z > -6 && p.Z < 6.5: // the top: the label (drawn without its text)
+		sf.albedo, sf.spec = hex(0xf2f2f0), 0.15
+		if p.X < -13.4 {
+			sf.albedo = hex(0x9a9ca0)
 		}
 	case n.X < -0.97: // right: the power button, USB-C, the Grove port
 		const cz = 0.4
@@ -113,12 +138,18 @@ func frontMarks(p V3, sf *surface) {
 	d := math.Hypot(p.X, p.Y-y)
 	if d < 1.9 && d > 1.25 {
 		sf.albedo, sf.glass = colRing, false
-		sf.emissive = colRing.mul(0.25)
+		return
+	}
+	if d <= 1.25 {
+		sf.albedo = colLens
 		return
 	}
 	for _, dot := range [][2]float64{{-14.5, 0.55}, {5.5, 0.3}, {7.5, 0.3}, {13.5, 0.5}} {
 		if math.Hypot(p.X-dot[0], p.Y-y) < dot[1] {
-			sf.albedo = hex(0x2a2c31)
+			sf.albedo = hex(0x2a2c31) // the microphones
+			if dot[1] < 0.4 {
+				sf.albedo, sf.glass = colSensor, false // the LTR-553's windows
+			}
 		}
 	}
 }
@@ -141,21 +172,36 @@ func (s *scene) body(p, n V3, mat int) surface {
 			}
 		}
 		s.barGlow(p.Z, p.Y, p.X > 0, &sf)
-	case mat == matTopBoard && n.Y > 0.9: // from the left (+X): port C, the IR window, port B
-		switch {
-		case box(p.X, p.Z, 13.5, 13.6, 18.5, 17.2), box(p.X, p.Z, -18.5, 13.6, -13.5, 17.2):
-			sf.albedo, sf.spec = colPortDark, 0.1
-		case box(p.X, p.Z, 1.5, 14.2, 5.0, 16.6):
-			sf.albedo, sf.spec = hex(0x111216), 0.6
+	case mat == matTopBoard && n.Y > 0.9: // M5Stack's photo from above: port C (teal) on the left, port B (black) on the right, the IR receiver at the front
+		pins := func(x0 float64) bool { // four pins in a row
+			k := math.Round((p.X - x0) / 2)
+			return k >= 0 && k <= 3 && math.Abs(p.X-x0-2*k) < 0.35 && math.Abs(p.Z-15.6) < 0.35
 		}
-	case mat == matBackPanel && n.Z < -0.9:
 		switch {
-		case box(p.X, p.Y, -13, top-7, 6, top-1):
-			sf.albedo, sf.spec = hex(0xf2f2f0), 0.2
-		case box(p.X, p.Y, 9, top-11.5, 16.5, top-8.5):
+		case box(p.X, p.Z, 5.5, 13.0, 17.0, 18.1):
+			sf.albedo, sf.spec = colPortTeal, 0.2
+			if pins(8.3) {
+				sf.albedo = hex(0xc8ccd0)
+			}
+		case box(p.X, p.Z, -16.0, 13.0, -4.6, 18.1):
+			sf.albedo, sf.spec = colPortDark, 0.1
+			if pins(-13.3) {
+				sf.albedo = hex(0xc8ccd0)
+			}
+		case math.Hypot(p.X-0.3, p.Z-17.6) < 0.5:
+			sf.albedo = hex(0x1e5a3c)
+		}
+	case mat == matBackPanel && n.Z < -0.9: // the main board through the open back (M5Stack's photo of the back)
+		sf.albedo, sf.spec, sf.shine = colBoard, 0.3, 30
+		switch {
+		case box(p.X, p.Y, 10, top-6, 17, top-1.5): // blue connectors, top left (seen from the back)
 			sf.albedo = colPortBlue
-		case box(p.X, p.Y, -13.4, top-11.7, -6.7, top-8.5):
-			sf.albedo = colPortDark
+		case box(p.X, p.Y, 3, top-13.5, 6, top-11): // a white one
+			sf.albedo = hex(0xe8e8e4)
+		case box(p.X, p.Y, -15, top-21, -12, top-3): // the ribbon cable
+			sf.albedo = hex(0xb7c4cc)
+		case box(p.X, p.Y, -8, top-18, -2, top-12), box(p.X, p.Y, 6, top-20, 11, top-15), box(p.X, p.Y, -4, top-9, 1, top-5):
+			sf.albedo = hex(0x15171a) // chips
 		}
 	}
 	return sf
