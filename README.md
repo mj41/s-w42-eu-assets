@@ -37,13 +37,15 @@ From Go:
 img := robot3d.Render(robot3d.Options{Width: 800, Height: 800, Screen: screen, Pitch: 20, Azimuth: 25, Elevation: 10})
 ```
 
-The model: the head is the CoreS3 cube (54 x 54 x 52 mm, rounded edges) with the screen
-(40.8 x 30.6 mm) in its black glass front, the red ring and the sensors' dots under it; on its
-sides the CoreS3 section (vents on the left; power button, USB-C and Grove port on the right),
-the label, three holes and the LED bar; at the back the ports, and the open bottom with the servo.
-Under the head the turntable (yaw) on the dark chamfered plate. Details are drawn, not modelled,
-and labels are drawn without text. The head pitches about a point low at its back, as on the
-robot.
+The model: M5Stack's structure files for the StackChan (`robot3d/m5stack/`, MIT, from
+[m5stack/M5_Hardware](https://github.com/m5stack/M5_Hardware/tree/master/Products/K151_StackChan/Structures)):
+the main body (the head behind the CoreS3, with its holes and LED slots), the base, the servo body
+with the turntable and its back cover, placed by the dimensions in M5Stack's drawing
+([docs](https://docs.m5stack.com/en/StackChan): 54 x 70.5 x 61.5 mm, the plate 8 high). Drawn
+here: the CoreS3 (54 x 54 x 15.5) with the screen (40.8 x 30.6) in its black glass front, the red
+ring and the sensors' dots, vents on the left, power button, USB-C and Grove port on the right; the
+light guide bars of the LEDs, the labels (without text) and the upper back's panel. The head
+pitches about the servo's horn, 24 mm above its bottom, right over the yaw axis.
 
 Stack-chan is a registered trademark of Shinya Ishikawa; M5Stack is a trademark of M5Stack
 Technology. This project is independent of both.

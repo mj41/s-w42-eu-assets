@@ -26,9 +26,7 @@ var (
 	colBarOff   = hex(0xeef3f5) // the LED bar, unlit
 	colRing     = hex(0xc4432c) // the red ring under the screen
 	colPlate    = hex(0x5b6067)
-	colHole     = hex(0x2c2f33)
 	colDisc     = hex(0xc9ccd0)
-	colDiscRing = hex(0x8d9298)
 )
 
 // lights: a key light from the upper left front, a fill from the right, a soft one from behind,
@@ -55,13 +53,15 @@ type scene struct {
 	leds       [12]*rgb
 }
 
-// head shading by the point's place on the head (head space: centre at 0, +Z the front).
-func (s *scene) head(p, n V3) surface {
+// core shades the CoreS3 (p, n in the robot's rest space): the glass front with the screen, the
+// red ring and the sensors' dots; vents on the robot's left (+X), the power button, USB-C and the
+// Grove port on its right (sizes from M5Stack's drawing).
+func (s *scene) core(p, n V3) surface {
 	sf := surface{albedo: colShell, spec: 0.18, shine: 24}
+	p = p.Sub(coreCentre)
 	switch {
 	case n.Z > 0.97: // the front
-		gx, gy := headW/2-rim, headH/2-rim
-		if roundRect(p.X, p.Y, gx, gy, headR-rim) <= 0 {
+		if roundRect(p.X, p.Y, 27-rim, 27-rim, coreR-rim) <= 0 {
 			sf = surface{albedo: colGlass, spec: 0.9, shine: 90, glass: true}
 			sx, sy := p.X+screenW/2, (screenCY+screenH/2)-p.Y // from the screen's top left
 			if sx >= 0 && sx <= screenW && sy >= 0 && sy <= screenH {
@@ -69,35 +69,46 @@ func (s *scene) head(p, n V3) surface {
 					sf.emissive = s.screen.sample(sx/screenW, sy/screenH).mul(s.brightness)
 				}
 			} else {
-				s.frontMarks(p, &sf)
+				frontMarks(p, &sf)
 			}
 		}
-	case n.X > 0.97 || n.X < -0.97: // the sides
-		s.side(p, n.X > 0, &sf)
-	case n.Z < -0.97: // the back: a sticker and ports at the top, open below (the servo inside)
-		switch {
-		case p.Y < 4:
-			sf = surface{albedo: hex(0x2f3338), spec: 0.05, shine: 10}
-			if math.Abs(p.X) < 14 && p.Y < 1 { // the servo
-				sf.albedo, sf.spec = colServo, 0.15
-				if math.Abs(p.X) > 12.5 || p.Y > -0.6 {
-					sf.albedo = colServo.mul(0.75)
-				}
+	case n.X > 0.97 && p.Z > -coreD/2+1.5 && p.Z < coreD/2-2: // left: vents, a hex grid of holes
+		if p.Y > -6 && p.Y < 19 {
+			const step = 2.1
+			row := math.Round(p.Y / (step * 0.866))
+			off := 0.0
+			if int(row)%2 != 0 {
+				off = step / 2
 			}
-		case box(p.X, p.Y, -13, 19.5, 6, 26):
-			sf.albedo, sf.spec = hex(0xf2f2f0), 0.2
-		case box(p.X, p.Y, 9, 15.5, 16.5, 18.5):
-			sf.albedo = colPortBlue
-		case box(p.X, p.Y, -13.4, 15.3, -6.7, 18.5):
-			sf.albedo = colPortDark
+			cz := math.Round((p.Z-off)/step)*step + off
+			if math.Hypot(p.Z-cz, p.Y-row*step*0.866) < 0.5 {
+				sf.albedo, sf.spec = colVent, 0
+			}
+		}
+	case n.X < -0.97: // right: the power button, USB-C, the Grove port
+		const cz = 0.4
+		if d := roundRect(p.Z-cz, p.Y-14, 3, 2.6, 1.2); d <= 0 {
+			sf.albedo = colShell.mul(0.9)
+			if d > -0.35 {
+				sf.albedo = colShell.mul(0.6)
+			}
+		}
+		if roundRect(p.Z-cz, p.Y+0.7, 1.5, 4.4, 1.4) <= 0 {
+			sf.albedo, sf.spec = colPortDark, 0.2
+		}
+		if d := roundRect(p.Z-cz, p.Y+13.5, 2.5, 4, 0.4); d <= 0 {
+			sf.albedo = hex(0xa83a3c)
+			if d < -0.8 {
+				sf.albedo = hex(0x3a1416)
+			}
 		}
 	}
 	return sf
 }
 
-// frontMarks: under the screen, the red ring and the sensors' dots.
-func (s *scene) frontMarks(p V3, sf *surface) {
-	const y = -headH/2 + 6.4
+// frontMarks: under the screen, the red ring and the sensors' dots (p from the CoreS3's centre).
+func frontMarks(p V3, sf *surface) {
+	const y = -27 + 6.7
 	d := math.Hypot(p.X, p.Y-y)
 	if d < 1.9 && d > 1.25 {
 		sf.albedo, sf.glass = colRing, false
@@ -111,85 +122,63 @@ func (s *scene) frontMarks(p V3, sf *surface) {
 	}
 }
 
-// side: the front 16 mm is the CoreS3 module (a seam behind it): vents on the robot's left (+X),
-// the power button, USB-C and the red Grove port on its right. Behind it on both sides: the
-// label (a light sticker with a dark end, drawn without its text), three round holes, and the
-// LED bar along the top; on the left (+X) LED 0 is at the front, on the right LED 11.
-func (s *scene) side(p V3, left bool, sf *surface) {
-	z, y := p.Z, p.Y
-	const seam = headD/2 - 16
+// body shades M5Stack's main body (p, n in the robot's rest space): on each side the label (a
+// light sticker with a dark end, drawn without its text) and the LED bar along the top (on the
+// left, +X, LED 0 at the front; on the right LED 11); at the back a sticker and two ports.
+func (s *scene) body(p, n V3, mat int) surface {
+	sf := surface{albedo: colShell, spec: 0.18, shine: 24}
+	top := robotH
 	switch {
-	case math.Abs(z-seam) < 0.25 && math.Abs(y) < headH/2-headR:
-		sf.albedo = colShell.mul(0.7)
-	case z > seam && left: // vents: a hex grid of small holes
-		if z > seam+1.8 && z < headD/2-3.5 && y > -4 && y < 17 {
-			const step = 2.1
-			row := math.Round(y / (step * 0.866))
-			off := 0.0
-			if int(row)%2 != 0 {
-				off = step / 2
-			}
-			cz := math.Round((z-off)/step)*step + off
-			if math.Hypot(z-cz, y-row*step*0.866) < 0.5 {
-				sf.albedo, sf.spec = colVent, 0
-			}
-		}
-	case z > seam: // the power button, USB-C, the Grove port
-		const cz = seam + 7
-		if d := roundRect(z-cz, y-16, 2.6, 2.2, 1); d <= 0 {
-			sf.albedo = colShell.mul(0.88)
-			if d > -0.35 {
-				sf.albedo = colShell.mul(0.6)
-			}
-		}
-		if roundRect(z-cz, y-3, 1.3, 4.2, 1.2) <= 0 {
-			sf.albedo, sf.spec = colPortDark, 0.2
-		}
-		if d := roundRect(z-cz, y+11, 2.4, 3.2, 0.4); d <= 0 {
-			sf.albedo = hex(0xa83a3c)
-			if d < -0.8 {
-				sf.albedo = hex(0x3a1416)
-			}
-		}
-	default: // the body: label, holes
-		const l0, l1 = seam - 6.5, seam - 0.8
-		if z >= l0 && z <= l1 && y > -headH/2+3 && y < headH/2-4 {
+	case mat == matBar:
+		s.ledBar(p.Z, p.X > 0, &sf)
+	case math.Abs(n.X) > 0.97 && math.Abs(p.X) > 26:
+		left := p.X > 0
+		if p.Z > 10.9 && p.Z < 16.2 && p.Y > headBottom+9.5 && p.Y < top-5.5 {
 			sf.albedo, sf.spec = hex(0xf3f3f1), 0.25
-			if (left && y > 9) || (!left && y < -14) {
+			if (left && p.Y > top-18) || (!left && p.Y < headBottom+20) {
 				sf.albedo = colPortDark
 			}
 		}
-		for _, hz := range []float64{-12.6, -8.1, -3.6} {
-			d := math.Hypot(z-hz, y-14.5)
-			if d < 2.0 {
-				sf.albedo = colShell.mul(0.72)
-				if d < 1.35 {
-					sf.albedo = hex(0x2b3138)
-				}
-			}
+		s.barGlow(p.Z, p.Y, p.X > 0, &sf)
+	case mat == matBackPanel && n.Z < -0.9:
+		switch {
+		case box(p.X, p.Y, -13, top-7, 6, top-1):
+			sf.albedo, sf.spec = hex(0xf2f2f0), 0.2
+		case box(p.X, p.Y, 9, top-11.5, 16.5, top-8.5):
+			sf.albedo = colPortBlue
+		case box(p.X, p.Y, -13.4, top-11.7, -6.7, top-8.5):
+			sf.albedo = colPortDark
 		}
 	}
-	// the LED bar
-	const z0, z1, y0, y1 = -20.5, -2.5, 20.6, 22.0
-	if z > z0-3 && z < z1+3 && y > y0-3 && y < y1+3 {
-		k := int(clamp((z1-z)/((z1-z0)/6), 0, 5)) // 0 at the front
-		idx := k
-		if !left {
-			idx = 11 - k
-		}
-		inBar := z >= z0 && z <= z1 && y >= y0 && y <= y1
-		if inBar {
-			sf.albedo, sf.spec, sf.shine = colBarOff, 0.3, 40
-		}
-		if c := s.leds[idx]; c != nil {
-			dz := math.Max(0, math.Max(z0-z, z-z1))
-			dy := math.Max(0, math.Max(y0-y, y-y1))
-			if inBar {
-				sf.emissive = sf.emissive.add(c.mul(0.9)).add(rgb{0.25, 0.25, 0.25}.mulc(*c))
-				sf.albedo = colBarOff.lerp(*c, 0.6)
-			} else {
-				sf.emissive = sf.emissive.add(c.mul(0.35 * math.Exp(-math.Hypot(dz, dy)/1.1)))
-			}
+	return sf
+}
+
+// led is the LED under a point of a bar: six along it, on the left (+X) LED 0 at the front, on
+// the right LED 11.
+func (s *scene) led(z float64, left bool) *rgb {
+	k := int(clamp((barZ1-z)/((barZ1-barZ0)/6), 0, 5))
+	if !left {
+		k = 11 - k
+	}
+	return s.leds[k]
+}
+
+// ledBar shades a light guide bar: milky when off, its LED's colour when on.
+func (s *scene) ledBar(z float64, left bool, sf *surface) {
+	sf.albedo, sf.spec, sf.shine = colBarOff, 0.3, 40
+	if c := s.led(z, left); c != nil {
+		sf.albedo, sf.spec = c.mul(0.35), 0.15 // the light, not the plastic
+		sf.emissive = c.mul(0.75)
+	}
+}
+
+// barGlow: a lit LED's light on the shell around its bar.
+func (s *scene) barGlow(z, y float64, left bool, sf *surface) {
+	dz := math.Max(0, math.Max(barZ0-z, z-barZ1))
+	dy := math.Max(0, math.Max(barY0-y, y-barY1))
+	if d := math.Hypot(dz, dy); d < 4 {
+		if c := s.led(clamp(z, barZ0, barZ1), left); c != nil {
+			sf.emissive = sf.emissive.add(c.mul(0.35 * math.Exp(-d/1.1)))
 		}
 	}
 }
@@ -240,24 +229,15 @@ func (t *texture) sample(u, v float64) rgb {
 	return a.lerp(b, fy)
 }
 
-// material is a non-head part's look; p, n in its own space.
-func material(mat int, p, n V3) surface {
+// material is the plate's and the servo's look.
+func material(mat int) surface {
 	switch mat {
 	case matPlate:
-		sf := surface{albedo: colPlate, spec: 0.12, shine: 20}
-		if n.Z > 0.9 && math.Abs(p.X) < 2 && p.Y < 6.5 { // the notch between its front feet
-			sf.albedo = colPlate.mul(0.6)
-		}
-		if n.Z < -0.9 && math.Abs(p.X) < 4.3 && math.Abs(p.Y-4.5) < 1.5 { // USB-C at the back
-			sf.albedo = colPortDark
-		}
-		return sf
-	case matPlateHole:
-		return surface{albedo: colHole}
-	case matDisc:
+		return surface{albedo: colPlate, spec: 0.12, shine: 20}
+	case matServo:
 		return surface{albedo: colDisc, spec: 0.25, shine: 30}
-	case matDiscRing:
-		return surface{albedo: colDiscRing, spec: 0.15, shine: 20}
+	case matServoCover:
+		return surface{albedo: colServo, spec: 0.15, shine: 20}
 	}
 	return surface{albedo: colShell}
 }

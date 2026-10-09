@@ -34,8 +34,8 @@ type Options struct {
 
 // target is what the camera looks at, radius what must fit: the robot in any pose.
 var (
-	target = V3{0, 38, 0}
-	radius = 50.0
+	target = V3{0, 37, 2}
+	radius = 52.0
 )
 
 // Render draws the robot.
@@ -157,10 +157,13 @@ func shadeSample(sc *scene, t tri, w [3]vert, b [3]float64, eye V3) rgb {
 	wp := w[0].p.Mul(b[0]).Add(w[1].p.Mul(b[1])).Add(w[2].p.Mul(b[2]))
 	wn := w[0].n.Mul(b[0]).Add(w[1].n.Mul(b[1])).Add(w[2].n.Mul(b[2])).Norm()
 	var sf surface
-	if t.part == partHead {
-		sf = sc.head(lp, ln)
-	} else {
-		sf = material(t.mat, lp, ln)
+	switch t.part {
+	case partCore:
+		sf = sc.core(lp, ln)
+	case partBody:
+		sf = sc.body(lp, ln, t.mat)
+	default:
+		sf = material(t.mat)
 	}
 	v := eye.Sub(wp).Norm()
 	if wn.Dot(v) < 0 { // seen from behind (a thin part): light the side we see
@@ -255,7 +258,7 @@ func edge(a, b, c V3) float64 { return (b.X-a.X)*(c.Y-a.Y) - (b.Y-a.Y)*(c.X-a.X)
 /* ---------------------------------- shadow -------------------------------- */
 
 // shadowMask is the robot's shadow on the ground (y = 0): the triangles cast along a light from
-// above, softened, plus a darker contact shadow right under the plate.
+// almost above, softened, darker right under the plate.
 func shadowMask(world [][3]vert, cam camera, w, h, ss int) []float64 {
 	mask := make([]float64, w*h)
 	cast := func(dir V3, strength float64, blur int) {
@@ -280,8 +283,8 @@ func shadowMask(world [][3]vert, cam camera, w, h, ss int) []float64 {
 			mask[i] = 1 - (1-mask[i])*(1-m[i]*strength)
 		}
 	}
-	cast(V3{0.35, 1, -0.45}.Norm(), 0.32, 7*ss)
-	cast(V3{0, 1, 0}, 0.3, 3*ss)
+	cast(V3{0.2, 1, -0.25}.Norm(), 0.3, 6*ss) // one soft shadow, a little behind
+	cast(V3{0, 1, 0}, 0.18, 2*ss)             // darker right under the plate
 	return mask
 }
 

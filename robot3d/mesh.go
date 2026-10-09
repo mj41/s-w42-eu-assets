@@ -5,48 +5,61 @@ import (
 	"sync"
 )
 
-// The robot's sizes in millimetres, measured from photos of an M5Stack Stackchan: the head is
-// the CoreS3 cube, the screen 320x240 (40.8 x 30.6 mm) in a black glass front; under the head a
-// light turntable (the yaw servo) on a dark chamfered plate.
+// The robot in millimetres: M5Stack's structure files (m5stack/, MIT) placed by M5Stack's drawing
+// (54 wide, 70.5 high, 61.5 deep; the plate 8 high), and the CoreS3 in front of the main body
+// drawn here (54 x 54 x 15.5, the screen 320x240 = 40.8 x 30.6 in its black glass front).
+//
+// The robot's space: the yaw axis at x = 0, z = 0 on the ground (y = 0); the robot faces +Z.
 const (
-	headW, headH, headD = 54.0, 54.0, 52.0
-	headR               = 5.0 // the head's rounded edges
-	plateHalf           = 22.0
-	plateChamfer        = 6.5
-	plateTop            = 10.0
-	plateBevel          = 1.2
-	discR               = 17.0
-	discTop             = 14.0
-	headBottom          = discTop + 0.6
-	screenW, screenH    = 40.8, 30.6
-	screenCY            = 0.6 // the screen's centre above the head's centre
-	rim                 = 1.6 // the shell's rim around the glass front
+	robotH      = 70.5
+	headBottom  = robotH - 54 // the head (CoreS3 + main body) is 54 high
+	coreFront   = 33.6        // the yaw axis is 33.6 behind the front
+	coreD       = 15.5        // the CoreS3's depth
+	bodyFront   = coreFront - coreD
+	coreR       = 3.5 // the CoreS3's rounded edges
+	screenW     = 40.8
+	screenH     = 30.6
+	screenCY    = 1.0 // the screen's centre above the CoreS3's centre
+	rim         = 1.4 // the shell's rim around the glass front
+	servoBottom = 8.5 // the servo body stands on the plate (8 high)
+	pitchAxisY  = servoBottom + 32.3
 )
 
-// pivot is the pitch axis in head space (head centre = origin): low near the back, so the front
-// lifts when the robot looks up and the back stays over the turntable, as on the robot.
-var pivot = V3{0, -headH/2 + 5, -headD/2 + 6}
+// coreCentre is the CoreS3's centre at rest.
+var coreCentre = V3{0, headBottom + 27, coreFront - coreD/2}
 
-// headRest is the head's centre at yaw 0, pitch 0.
-var headRest = V3{0, headBottom + headH/2, 0}
+// pivot is the pitch axis (along X) at rest: the servo's horn, over the yaw axis.
+var pivot = V3{0, pitchAxisY, 0}
 
-// Parts move differently: the plate stays, the disc turns with yaw, the head with yaw and pitch.
+// Parts move differently: the plate stays, the servo body turns with yaw, the head (main body
+// and CoreS3) with yaw and pitch.
 const (
 	partPlate = iota
-	partDisc
-	partHead
+	partServo
+	partBody
+	partCore
 )
 
 // Materials.
 const (
 	matPlate = iota
-	matPlateHole
-	matDisc
-	matDiscRing
-	matHead
+	matServo
+	matServoCover
+	matBody
+	matBar       // the light guide bars of the LEDs
+	matBackPanel // the upper back: a sticker and two ports
+	matCore
 )
 
-type vert struct{ p, n V3 } // in the part's own space
+// The LED bars' slot (one each side, at the top) and the upper back's panel.
+const (
+	barZ0, barZ1 = -16.3, 13.0
+	barY0, barY1 = robotH - 1.8, robotH - 0.4
+	backPanelZ   = bodyFront - 46.7 + 1.6
+	backPanelY0  = robotH - 33
+)
+
+type vert struct{ p, n V3 } // at rest, in the robot's space
 
 type tri struct {
 	v    [3]vert
@@ -62,27 +75,44 @@ var (
 func mesh() []tri {
 	meshOnce.Do(func() {
 		var m []tri
-		m = append(m, plate()...)
-		m = append(m, disc()...)
-		m = append(m, roundedBox(V3{headW / 2, headH / 2, headD / 2}, headR, 7, partHead, matHead)...)
+		// STL anchors: the turntable's centre (base, servo body), the main body's front.
+		m = append(m, stlPart("StackChan-Base.stl", 106.2, -320.2, -32.6, V3{0, 0, 0}, partPlate, matPlate)...)
+		m = append(m, stlPart("StackChan-ServoBody.stl", 229.45, -320.9, -22.3, V3{0, servoBottom, 0}, partServo, matServo)...)
+		m = append(m, stlPart("StackChan-ServoSideCover.stl", 229.45, -320.9, -22.3, V3{0, servoBottom, 0}, partServo, matServoCover)...)
+		m = append(m, stlPart("StackChan-MainBody.stl", 475.7, -352.0, -17.7, V3{0, headBottom, bodyFront}, partBody, matBody)...)
+		add := func(tris []tri, at V3) {
+			for _, t := range tris {
+				for k := range t.v {
+					t.v[k].p = t.v[k].p.Add(at)
+				}
+				m = append(m, t)
+			}
+		}
+		add(roundedBox(V3{27, 27, coreD / 2}, coreR, 6, partCore, matCore), coreCentre)
+		for _, x := range []float64{-26.1, 26.1} {
+			add(roundedBox(V3{0.75, (barY1 - barY0) / 2, (barZ1 - barZ0) / 2}, 0.6, 2, partBody, matBar),
+				V3{x, (barY0 + barY1) / 2, (barZ0 + barZ1) / 2})
+		}
+		add(roundedBox(V3{25.6, (robotH - 1.2 - backPanelY0) / 2, 0.5}, 0.4, 1, partBody, matBackPanel),
+			V3{0, (robotH - 1.2 + backPanelY0) / 2, backPanelZ})
 		meshTris = m
 	})
 	return meshTris
 }
 
-// transforms gives each part's matrix (part space to world) for a pose.
-func transforms(yaw, pitch float64) [3]M4 {
+// transforms gives each part's matrix (rest to world) for a pose.
+func transforms(yaw, pitch float64) [4]M4 {
 	ry := rotY(rad(yaw)) // +yaw: to the robot's left (+X), counter-clockwise seen from above
-	head := ry.Mul(translate(headRest.Add(pivot))).Mul(rotX(-rad(pitch))).Mul(translate(pivot.Mul(-1)))
-	return [3]M4{identity(), ry, head}
+	head := ry.Mul(translate(pivot)).Mul(rotX(-rad(pitch))).Mul(translate(pivot.Mul(-1)))
+	return [4]M4{identity(), ry, head, head}
 }
 
 func quad(a, b, c, d vert, part, mat int) []tri {
 	return []tri{{[3]vert{a, b, c}, part, mat}, {[3]vert{a, c, d}, part, mat}}
 }
 
-// roundedBox is a box of half sizes h with edges rounded by r: a grid on each face, pushed out
-// from the inner box, denser where the edges bend.
+// roundedBox is a box of half sizes h around the origin with edges rounded by r: a grid on each
+// face, pushed out from the inner box, denser where the edges bend.
 func roundedBox(h V3, r float64, steps int, part, mat int) []tri {
 	in := V3{h.X - r, h.Y - r, h.Z - r}
 	coords := func(inner float64) []float64 {
@@ -97,7 +127,6 @@ func roundedBox(h V3, r float64, steps int, part, mat int) []tri {
 		return c
 	}
 	get := func(v V3, i int) float64 { return [3]float64{v.X, v.Y, v.Z}[i] }
-	mk := func(a [3]float64) V3 { return V3{a[0], a[1], a[2]} }
 	point := func(p V3) vert {
 		q := V3{clamp(p.X, -in.X, in.X), clamp(p.Y, -in.Y, in.Y), clamp(p.Z, -in.Z, in.Z)}
 		n := p.Sub(q).Norm()
@@ -115,74 +144,12 @@ func roundedBox(h V3, r float64, steps int, part, mat int) []tri {
 						var a [3]float64
 						a[axis] = s * get(h, axis)
 						a[u], a[v] = cu[ij[0]], cv[ij[1]]
-						c[k] = point(mk(a))
+						c[k] = point(V3{a[0], a[1], a[2]})
 					}
 					out = append(out, quad(c[0], c[1], c[2], c[3], part, mat)...)
 				}
 			}
 		}
 	}
-	return out
-}
-
-// plate is the base: an octagon (a square with chamfered corners) with a bevelled top edge and
-// four screw holes.
-func plate() []tri {
-	oct := func(half, ch float64) []V3 {
-		return []V3{{half - ch, 0, half}, {half, 0, half - ch}, {half, 0, -half + ch}, {half - ch, 0, -half},
-			{-half + ch, 0, -half}, {-half, 0, -half + ch}, {-half, 0, half - ch}, {-half + ch, 0, half}}
-	}
-	lo, hi := oct(plateHalf, plateChamfer), oct(plateHalf-plateBevel, plateChamfer-plateBevel*0.4)
-	at := func(p V3, y float64) V3 { return V3{p.X, y, p.Z} }
-	var out []tri
-	for i := range lo {
-		j := (i + 1) % len(lo)
-		side := lo[j].Sub(lo[i]).Cross(V3{0, 1, 0}).Norm().Mul(-1)
-		if side.Dot(lo[i]) < 0 {
-			side = side.Mul(-1)
-		}
-		out = append(out, quad(vert{at(lo[i], 0), side}, vert{at(lo[j], 0), side},
-			vert{at(lo[j], plateTop-plateBevel), side}, vert{at(lo[i], plateTop-plateBevel), side}, partPlate, matPlate)...)
-		bev := side.Add(V3{0, 1, 0}).Norm()
-		out = append(out, quad(vert{at(lo[i], plateTop-plateBevel), bev}, vert{at(lo[j], plateTop-plateBevel), bev},
-			vert{at(hi[j], plateTop), bev}, vert{at(hi[i], plateTop), bev}, partPlate, matPlate)...)
-		up := V3{0, 1, 0}
-		out = append(out, tri{[3]vert{{V3{0, plateTop, 0}, up}, {at(hi[j], plateTop), up}, {at(hi[i], plateTop), up}}, partPlate, matPlate})
-	}
-	// screw holes: dark discs just above the top
-	for _, c := range []V3{{15.5, 0, 15.5}, {-15.5, 0, 15.5}, {15.5, 0, -15.5}, {-15.5, 0, -15.5}} {
-		out = append(out, flatDisc(V3{c.X, plateTop + 0.05, c.Z}, 1.9, 16, partPlate, matPlateHole)...)
-	}
-	return out
-}
-
-func flatDisc(c V3, r float64, n int, part, mat int) []tri {
-	var out []tri
-	up := V3{0, 1, 0}
-	for i := 0; i < n; i++ {
-		a0, a1 := 2*math.Pi*float64(i)/float64(n), 2*math.Pi*float64(i+1)/float64(n)
-		p0 := c.Add(V3{r * math.Sin(a0), 0, r * math.Cos(a0)})
-		p1 := c.Add(V3{r * math.Sin(a1), 0, r * math.Cos(a1)})
-		out = append(out, tri{[3]vert{{c, up}, {p1, up}, {p0, up}}, part, mat})
-	}
-	return out
-}
-
-// disc is the turntable: a light cylinder with a darker ring at its foot.
-func disc() []tri {
-	const n = 48
-	var out []tri
-	ring := func(r, y0, y1 float64, mat int) {
-		for i := 0; i < n; i++ {
-			a0, a1 := 2*math.Pi*float64(i)/n, 2*math.Pi*float64(i+1)/n
-			n0, n1 := V3{math.Sin(a0), 0, math.Cos(a0)}, V3{math.Sin(a1), 0, math.Cos(a1)}
-			out = append(out, quad(vert{V3{r * n0.X, y0, r * n0.Z}, n0}, vert{V3{r * n1.X, y0, r * n1.Z}, n1},
-				vert{V3{r * n1.X, y1, r * n1.Z}, n1}, vert{V3{r * n0.X, y1, r * n0.Z}, n0}, partDisc, mat)...)
-		}
-	}
-	ring(discR+0.8, plateTop, plateTop+1.2, matDiscRing)
-	out = append(out, flatDisc(V3{0, plateTop + 1.2, 0}, discR+0.8, n, partDisc, matDiscRing)...)
-	ring(discR, plateTop+1.2, discTop, matDisc)
-	out = append(out, flatDisc(V3{0, discTop, 0}, discR, n, partDisc, matDisc)...)
 	return out
 }
