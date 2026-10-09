@@ -165,7 +165,7 @@ func (s *scene) body(p, n V3, mat int) surface {
 		s.ledBar(p.Z, p.X > 0, &sf)
 	case math.Abs(n.X) > 0.97 && math.Abs(p.X) > 26:
 		left := p.X > 0
-		if p.Z > 10.9 && p.Z < 16.2 && p.Y > headBottom+9.5 && p.Y < top-5.5 {
+		if p.Z > stickerZ0 && p.Z < stickerZ1 && p.Y > stickerY0 && p.Y < stickerY1 {
 			sf.albedo, sf.spec = hex(0xf3f3f1), 0.25
 			if (left && p.Y > top-18) || (!left && p.Y < headBottom+20) {
 				sf.albedo = colPortDark

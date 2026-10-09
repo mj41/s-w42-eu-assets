@@ -76,6 +76,12 @@ const (
 	topBoardY              = robotH - 0.3 // a little under the top's edge
 )
 
+// The side stickers: a light label with a dark end (drawn without its text, in body's shading).
+const (
+	stickerZ0, stickerZ1 = 10.9, 16.2
+	stickerY0, stickerY1 = headBottom + 9.5, robotH - 5.5
+)
+
 type vert struct{ p, n V3 } // at rest, in the robot's space
 
 type tri struct {
@@ -115,6 +121,12 @@ func mesh() []tri {
 		}
 		add(roundedBox(V3{25.6, (robotH - 1.2 - backPanelY0) / 2, 0.5}, 0.4, 1, partBody, matBackPanel),
 			V3{0, (robotH - 1.2 + backPanelY0) / 2, backPanelZ})
+		// The side stickers (drawn in body's shading) lie flush on the side, over the pocket M5Stack's
+		// main body leaves under them (seen as a step behind the CoreS3 on the owner's photos).
+		for _, x := range []float64{-27, 27} {
+			add(roundedBox(V3{0.06, (stickerY1 - stickerY0) / 2, (stickerZ1 - stickerZ0) / 2}, 0.03, 1, partBody, matBody),
+				V3{x, (stickerY0 + stickerY1) / 2, (stickerZ0 + stickerZ1) / 2})
+		}
 		add(roundedBox(V3{topBoardX, 0.8, (topBoardZ1 - topBoardZ0) / 2}, 0.2, 1, partBody, matTopBoard),
 			V3{0, topBoardY - 0.8, (topBoardZ0 + topBoardZ1) / 2})
 		meshTris = m
