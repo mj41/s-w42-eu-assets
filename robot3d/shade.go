@@ -17,19 +17,19 @@ func hex(v uint32) rgb {
 }
 
 var (
-	colShell    = hex(0xe4e5e7) // the head's light grey shell
+	colShell    = hex(0xd6d7d9) // the head's light grey shell (the owner's photos of the robot)
 	colGlass    = hex(0x0d0e11) // the black glass front
 	colVent     = hex(0x55595e)
 	colPortDark = hex(0x1c1d20)
 	colPortBlue = hex(0x2f9be0)
 	colServo    = hex(0x50555b) // the open back: the servo inside
-	colBarOff   = hex(0xa6d6d8) // the LED bar, unlit: a mint light guide (M5Stack's photos)
-	colRing     = hex(0x9a6a3e) // the camera's bronze ring under the screen (M5Stack's photos)
+	colBarOff   = hex(0xb5cfe0) // the LED bar, unlit: a light blue light guide (the owner's photos)
+	colRing     = hex(0xc9573e) // the camera's red ring under the screen (the owner's photos)
 	colLens     = hex(0x3a4c56) // the camera's lens
-	colSensor   = hex(0x7fb6bd) // the light and proximity sensor's two windows: teal
+	colSensor   = hex(0x2a2c31) // the light and proximity sensor's two windows: dark (the owner's photos)
 	colBoard    = hex(0x1f3a31) // the main board, seen through the open back: green
 	colPortTeal = hex(0x2a9da5) // port C (UART) on the head's top
-	colPlate    = hex(0x5b6067)
+	colPlate    = hex(0x55585e) // the base: dark grey (the owner's photos)
 	colDisc     = hex(0xc9ccd0)
 	colMotor    = hex(0x1d1e21) // the servos themselves: black
 )
