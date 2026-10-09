@@ -60,3 +60,27 @@ func green(w, h int) *image.RGBA {
 	}
 	return img
 }
+
+// Parts covers every triangle of the model once, each part named and on a joint.
+func TestParts(t *testing.T) {
+	n := 0
+	seen := map[string]bool{}
+	for _, p := range Parts() {
+		if p.Name == "" || p.Joint == "" || seen[p.Name] || len(p.Positions)%3 != 0 || len(p.Normals) != len(p.Positions) {
+			t.Fatalf("part %+v", p.Name)
+		}
+		seen[p.Name] = true
+		n += len(p.Positions) / 3
+	}
+	if n != len(mesh()) {
+		t.Fatalf("%d triangles in parts, %d in the model", n, len(mesh()))
+	}
+	for _, want := range []string{"plate", "servo", "body", "core", "led-bar-left", "led-bar-right", "back-panel"} {
+		if !seen[want] {
+			t.Errorf("no part %s", want)
+		}
+	}
+	if c, w, h := Screen(); c.Z != coreFront || w != screenW || h != screenH {
+		t.Errorf("screen %v %v %v", c, w, h)
+	}
+}
