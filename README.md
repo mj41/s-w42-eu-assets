@@ -47,6 +47,21 @@ ring and the sensors' dots, vents on the left, power button, USB-C and Grove por
 light guide bars of the LEDs, the labels (without text) and the upper back's panel. The head
 pitches about the servo's horn, 24 mm above its bottom, right over the yaw axis.
 
+## The pictures in the other repositories
+
+All robot pictures in the docs, READMEs and pages come from here, so one change (the model, a
+screen, a pose) refreshes them everywhere:
+
+1. `screens/`: the robot's screens (320x240), e.g. from `s-w42-eu-usb screenshot -o x.jpg`.
+2. `renders.json`: each picture: a still (one screen) or an animation (frames with captions), the
+   head's pose, the camera, the LEDs, the size.
+3. `go run ./cmd/robot3d-renders` writes `renders/` (stills PNG, animations GIF); `-only a,b`
+   for some, `-check` fails if `renders/` is out of date. The same inputs give the same bytes.
+4. `distribute.json`: where each picture goes (`repo:path`; the extension picks PNG, JPEG or GIF,
+   `size` scales a still down); `repos` maps names to checkouts.
+5. `go run ./cmd/robot3d-distribute -check` lists what is out of date; without `-check` it writes
+   those files. It only writes: commit and push in each repository by its own rules.
+
 Stack-chan is a registered trademark of Shinya Ishikawa; M5Stack is a trademark of M5Stack
 Technology. This project is independent of both.
 

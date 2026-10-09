@@ -12,12 +12,10 @@ import (
 	"flag"
 	"fmt"
 	"image"
-	"image/color"
 	_ "image/jpeg"
 	"image/png"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/mj41/s-w42-eu-assets/robot3d"
@@ -61,29 +59,14 @@ func main() {
 		}
 		o.Screen = img
 	}
-	if *leds != "" {
-		list := strings.Split(*leds, ",")
-		if c, n, ok := strings.Cut(*leds, "*"); ok {
-			k, err := strconv.Atoi(n)
-			if err != nil {
-				fail("-leds %q", *leds)
-			}
-			list = list[:0]
-			for range k {
-				list = append(list, c)
-			}
-		}
-		if len(list) > 12 {
-			fail("-leds: 12 at most")
-		}
-		for i, s := range list {
-			if s = strings.TrimSpace(s); s != "" {
-				o.LEDs[i] = parseColor(s)
-			}
-		}
+	var err error
+	if o.LEDs, err = robot3d.ParseLEDs(*leds); err != nil {
+		fail("-leds: %v", err)
 	}
 	if *bg != "" {
-		o.Background = parseColor(*bg)
+		if o.Background, err = robot3d.ParseColor(*bg); err != nil {
+			fail("-bg: %v", err)
+		}
 	}
 
 	if *frames <= 0 {
@@ -98,14 +81,6 @@ func main() {
 		o.Azimuth = start + *turn*float64(i)/float64(*frames)
 		write(fmt.Sprintf(*out, i), robot3d.Render(o))
 	}
-}
-
-func parseColor(s string) color.Color {
-	var r, g, b uint8
-	if _, err := fmt.Sscanf(strings.TrimPrefix(s, "#"), "%02x%02x%02x", &r, &g, &b); err != nil {
-		fail("colour %q: want #rrggbb", s)
-	}
-	return color.RGBA{r, g, b, 255}
 }
 
 func write(path string, img image.Image) {

@@ -1,0 +1,105 @@
+{
+ "repos": {
+  "w42-eu-web": "~/work-webs/w42-eu-web",
+  "home-w42-eu": "~/work-stai/home-w42-eu",
+  "mj-ofun": "~/work-stai/mj-ofun",
+  "s-w42-eu-pet": "~/work-stai/s-w42-eu-pet",
+  "s-w42-eu-raw": "~/work-stai/s-w42-eu-raw",
+  "s-w42-eu-focus": "~/work-stai/s-w42-eu-focus",
+  "s-w42-eu-manager": "~/work-stai/s-w42-eu-manager",
+  "firmware": "~/work-stai/stackchan"
+ },
+ "copies": [
+  {
+   "render": "pet",
+   "to": "w42-eu-web:s/robot3d-pet.png",
+   "size": "400x400"
+  },
+  {
+   "render": "raw",
+   "to": "w42-eu-web:s/robot3d-raw.png",
+   "size": "400x400"
+  },
+  {
+   "render": "focus",
+   "to": "w42-eu-web:s/robot3d-focus.png",
+   "size": "400x400"
+  },
+  {
+   "render": "qr",
+   "to": "w42-eu-web:s/robot3d-qr.png",
+   "size": "400x400"
+  },
+  {
+   "render": "one-robot-many-apps",
+   "to": "home-w42-eu:docs/implementations/img/one-robot-many-apps.gif"
+  },
+  {
+   "render": "emotions",
+   "to": "home-w42-eu:docs/implementations/img/emotions.gif"
+  },
+  {
+   "render": "pet-hungry",
+   "to": "home-w42-eu:docs/implementations/img/robot3d-pet-hungry.png",
+   "size": "400x400"
+  },
+  {
+   "render": "pet-menu",
+   "to": "home-w42-eu:docs/implementations/img/robot3d-pet-menu.png",
+   "size": "400x400"
+  },
+  {
+   "render": "pet-food",
+   "to": "home-w42-eu:docs/implementations/img/robot3d-pet-food.png",
+   "size": "400x400"
+  },
+  {
+   "render": "qr",
+   "to": "home-w42-eu:docs/implementations/img/robot3d-qr.png",
+   "size": "400x400"
+  },
+  {
+   "render": "raw",
+   "to": "home-w42-eu:docs/implementations/img/robot3d-raw.png",
+   "size": "400x400"
+  },
+  {
+   "render": "one-robot-many-apps",
+   "to": "mj-ofun:imgs/stackchan-one-robot-many-apps.gif"
+  },
+  {
+   "render": "pet-faces",
+   "to": "s-w42-eu-pet:docs/img/faces.gif"
+  },
+  {
+   "render": "pet",
+   "to": "s-w42-eu-pet:docs/img/robot3d-pet.png",
+   "size": "400x400"
+  },
+  {
+   "render": "raw",
+   "to": "s-w42-eu-raw:docs/img/robot3d-raw.png",
+   "size": "400x400"
+  },
+  {
+   "render": "focus",
+   "to": "s-w42-eu-focus:docs/img/robot3d-focus.png",
+   "size": "400x400"
+  },
+  {
+   "render": "ask-pet",
+   "to": "s-w42-eu-manager:docs/robot3d-ask-pet.png",
+   "size": "400x400"
+  },
+  {
+   "render": "raw",
+   "to": "firmware:firmware/main/apps/app_embody_mode/screenshots/robot3d-raw.png",
+   "size": "400x400"
+  },
+  {
+   "render": "qr",
+   "to": "firmware:firmware/main/apps/app_embody_mode/screenshots/robot3d-qr.png",
+   "size": "400x400"
+  }
+ ]
+}
