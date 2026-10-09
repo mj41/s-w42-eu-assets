@@ -169,6 +169,16 @@ func (s *scene) body(p, n V3, mat int) surface {
 			sf.albedo, sf.spec = hex(0xf3f3f1), 0.25
 			if (left && p.Y > top-18) || (!left && p.Y < headBottom+20) {
 				sf.albedo = colPortDark
+				// its face, turned on its side (the owner's photos): two eyes toward the front, the mouth behind
+				cy := (top - 18 + stickerY1) / 2
+				if !left {
+					cy = (stickerY0 + headBottom + 20) / 2
+				}
+				zc := (stickerZ0 + stickerZ1) / 2
+				if math.Hypot(p.Z-zc-1.1, p.Y-cy-3.4) < 0.55 || math.Hypot(p.Z-zc-1.1, p.Y-cy+3.4) < 0.55 ||
+					(math.Abs(p.Z-zc+1.1) < 0.22 && math.Abs(p.Y-cy) < 2.4) {
+					sf.albedo = hex(0xf3f3f1)
+				}
 			}
 		}
 		s.barGlow(p.Z, p.Y, p.X > 0, &sf)
