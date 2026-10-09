@@ -17,7 +17,8 @@ const (
 	coreD       = 15.5        // the CoreS3's depth
 	bodyFront   = coreFront - coreD
 	coreR       = 3.5 // the CoreS3's rounded edges: the front and the corners
-	coreBackR   = 0.6 // its back's edges, against the main body: a thin seam
+	coreBackR   = 0.3 // its back's edges, against the main body: a thin seam
+	coreOverLip = 0.7 // the CoreS3 slides over the main body's front lip (z 17.4 to its front): its back covers it
 	screenW     = 40.8
 	screenH     = 30.6
 	screenCY    = 1.0 // the screen's centre above the CoreS3's centre
@@ -105,7 +106,7 @@ func mesh() []tri {
 				m = append(m, t)
 			}
 		}
-		add(roundedBoxBack(V3{27, 27, coreD / 2}, coreR, coreBackR, 6, partCore, matCore), coreCentre)
+		add(roundedBoxBack(V3{27, 27, (coreD + coreOverLip) / 2}, coreR, coreBackR, 6, partCore, matCore), coreCentre.Add(V3{0, 0, -coreOverLip / 2}))
 		add(roundedBox(V3{(pitchServoX1 - pitchServoX0) / 2, (pitchServoY1 - pitchServoY0) / 2, (pitchServoZ1 - pitchServoZ0) / 2}, 0.8, 2, partServo, matPitchServo),
 			V3{(pitchServoX0 + pitchServoX1) / 2, (pitchServoY0 + pitchServoY1) / 2, (pitchServoZ0 + pitchServoZ1) / 2})
 		for _, x := range []float64{-26.1, 26.1} {
