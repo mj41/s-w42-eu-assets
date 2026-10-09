@@ -29,7 +29,7 @@ var (
 	colSensor   = hex(0x2a2c31) // the light and proximity sensor's two windows: dark (the owner's photos)
 	colBoard    = hex(0x1f3a31) // the main board, seen through the open back: green
 	colPortTeal = hex(0x2a9da5) // port C (UART) on the head's top
-	colPlate    = hex(0x55585e) // the base: dark grey (the owner's photos)
+	colPlate    = hex(0x7d8087) // the base: dark grey (the owner's photos; it renders darker)
 	colDisc     = hex(0xc9ccd0)
 	colMotor    = hex(0x1d1e21) // the servos themselves: black
 )
