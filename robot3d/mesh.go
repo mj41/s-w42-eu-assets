@@ -66,14 +66,15 @@ const (
 // The LED bars' slot (one each side, at the top) and the upper back's panel.
 const (
 	barZ0, barZ1 = -16.3, 13.0
-	barY0, barY1 = robotH - 1.8, robotH - 0.4
+	barY0, barY1 = robotH - 4.4, robotH - 0.15 // the light guide fills the main body's notch along its top edge (y 67 up)
+	barX0, barX1 = 22.8, 27.0                  // (x 24.6 out), round at its outer corner, as M5Stack's light guide is
 	backPanelZ   = bodyFront - 46.7 + 1.6
 	backPanelY0  = robotH - 29 // its lower edge, from the photo of the back: the servo body shows below it
 	// The top board fills the opening M5Stack's main body leaves in its top behind the CoreS3
 	// (M5Stack's annotated picture of the robot: touch pads x 3, IR Tx / Rx, GPIO port B, UART port C).
 	topBoardX              = 21.0
 	topBoardZ0, topBoardZ1 = 12.6, bodyFront
-	topBoardY              = robotH - 0.3 // a little under the top's edge
+	topBoardY              = robotH - 0.05 // flush with the top (the owner's photos)
 )
 
 // The side stickers: a light label with a dark end (drawn without its text, in body's shading).
@@ -115,10 +116,11 @@ func mesh() []tri {
 		add(roundedBoxBack(V3{27, 27, (coreD + coreOverLip) / 2}, coreR, coreBackR, 6, partCore, matCore), coreCentre.Add(V3{0, 0, -coreOverLip / 2}))
 		add(roundedBox(V3{(pitchServoX1 - pitchServoX0) / 2, (pitchServoY1 - pitchServoY0) / 2, (pitchServoZ1 - pitchServoZ0) / 2}, 0.8, 2, partServo, matPitchServo),
 			V3{(pitchServoX0 + pitchServoX1) / 2, (pitchServoY0 + pitchServoY1) / 2, (pitchServoZ0 + pitchServoZ1) / 2})
-		for _, x := range []float64{-26.1, 26.1} {
-			add(roundedBox(V3{0.75, (barY1 - barY0) / 2, (barZ1 - barZ0) / 2}, 0.6, 2, partBody, matBar),
-				V3{x, (barY0 + barY1) / 2, (barZ0 + barZ1) / 2})
+		for _, sx := range []float64{-1, 1} {
+			add(roundedBox(V3{(barX1 - barX0) / 2, (barY1 - barY0) / 2, (barZ1 - barZ0) / 2}, 2.0, 3, partBody, matBar),
+				V3{sx * (barX0 + barX1) / 2, (barY0 + barY1) / 2, (barZ0 + barZ1) / 2})
 		}
+
 		add(roundedBox(V3{25.6, (robotH - 1.2 - backPanelY0) / 2, 0.5}, 0.4, 1, partBody, matBackPanel),
 			V3{0, (robotH - 1.2 + backPanelY0) / 2, backPanelZ})
 		// The side stickers (drawn in body's shading) lie flush on the side, over the pocket M5Stack's
