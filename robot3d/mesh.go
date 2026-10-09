@@ -49,6 +49,15 @@ const (
 	matBar       // the light guide bars of the LEDs
 	matBackPanel // the upper back: a sticker and two ports
 	matCore
+	matPitchServo // the pitch servo (Feetech SCS0009, black), in the servo body's pocket
+)
+
+// The pitch servo, drawn (M5Stack's files leave the servos out): the pocket the servo body
+// leaves on the robot's left, round the pitch axis, between its side and the main body's boss.
+const (
+	pitchServoX0, pitchServoX1 = 11.0, 22.0
+	pitchServoY0, pitchServoY1 = 36.0, 47.5
+	pitchServoZ0, pitchServoZ1 = -17.0, 10.0
 )
 
 // The LED bars' slot (one each side, at the top) and the upper back's panel.
@@ -56,7 +65,7 @@ const (
 	barZ0, barZ1 = -16.3, 13.0
 	barY0, barY1 = robotH - 1.8, robotH - 0.4
 	backPanelZ   = bodyFront - 46.7 + 1.6
-	backPanelY0  = robotH - 33
+	backPanelY0  = robotH - 29 // its lower edge, from the photo of the back: the servo body shows below it
 )
 
 type vert struct{ p, n V3 } // at rest, in the robot's space
@@ -79,6 +88,7 @@ func mesh() []tri {
 		m = append(m, stlPart("StackChan-Base.stl", 106.2, -320.2, -32.6, V3{0, 0, 0}, partPlate, matPlate)...)
 		m = append(m, stlPart("StackChan-ServoBody.stl", 229.45, -320.9, -22.3, V3{0, servoBottom, 0}, partServo, matServo)...)
 		m = append(m, stlPart("StackChan-ServoSideCover.stl", 229.45, -320.9, -22.3, V3{0, servoBottom, 0}, partServo, matServoCover)...)
+		m = append(m, stlPart("StackChan-ServoCover.stl", 229.45, -320.9, -22.3, V3{0, servoBottom, 0}, partServo, matServo)...) // the servo body's top, inside the head
 		m = append(m, stlPart("StackChan-MainBody.stl", 475.7, -352.0, -17.7, V3{0, headBottom, bodyFront}, partBody, matBody)...)
 		add := func(tris []tri, at V3) {
 			for _, t := range tris {
@@ -89,6 +99,8 @@ func mesh() []tri {
 			}
 		}
 		add(roundedBox(V3{27, 27, coreD / 2}, coreR, 6, partCore, matCore), coreCentre)
+		add(roundedBox(V3{(pitchServoX1 - pitchServoX0) / 2, (pitchServoY1 - pitchServoY0) / 2, (pitchServoZ1 - pitchServoZ0) / 2}, 0.8, 2, partServo, matPitchServo),
+			V3{(pitchServoX0 + pitchServoX1) / 2, (pitchServoY0 + pitchServoY1) / 2, (pitchServoZ0 + pitchServoZ1) / 2})
 		for _, x := range []float64{-26.1, 26.1} {
 			add(roundedBox(V3{0.75, (barY1 - barY0) / 2, (barZ1 - barZ0) / 2}, 0.6, 2, partBody, matBar),
 				V3{x, (barY0 + barY1) / 2, (barZ0 + barZ1) / 2})

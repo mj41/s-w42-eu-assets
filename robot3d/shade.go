@@ -27,6 +27,7 @@ var (
 	colRing     = hex(0xc4432c) // the red ring under the screen
 	colPlate    = hex(0x5b6067)
 	colDisc     = hex(0xc9ccd0)
+	colMotor    = hex(0x1d1e21) // the servos themselves: black
 )
 
 // lights: a key light from the upper left front, a fill from the right, a soft one from behind,
@@ -238,6 +239,8 @@ func material(mat int) surface {
 		return surface{albedo: colDisc, spec: 0.25, shine: 30}
 	case matServoCover:
 		return surface{albedo: colServo, spec: 0.15, shine: 20}
+	case matPitchServo:
+		return surface{albedo: colMotor, spec: 0.2, shine: 30}
 	}
 	return surface{albedo: colShell}
 }
