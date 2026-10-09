@@ -158,6 +158,9 @@ func roundedBox(h V3, r float64, steps int, part, mat int) []tri {
 						a[u], a[v] = cu[ij[0]], cv[ij[1]]
 						c[k] = point(V3{a[0], a[1], a[2]})
 					}
+					if s < 0 { // counter-clockwise seen from outside, as the + side
+						c[1], c[3] = c[3], c[1]
+					}
 					out = append(out, quad(c[0], c[1], c[2], c[3], part, mat)...)
 				}
 			}

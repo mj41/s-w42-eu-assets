@@ -26,3 +26,20 @@ func TestSurface(t *testing.T) {
 		t.Errorf("the right side below the ports: %v %v, want the shell %v", c, glass, shell)
 	}
 }
+
+// Every part's triangles are wound counter-clockwise seen from the side their normals point to
+// (as glTF and other renderers that cull or light by winding expect).
+func TestPartsWound(t *testing.T) {
+	for _, p := range Parts() {
+		inward := 0
+		for i := 0; i < len(p.Positions); i += 3 {
+			face := p.Positions[i+1].Sub(p.Positions[i]).Cross(p.Positions[i+2].Sub(p.Positions[i]))
+			if face.Dot(p.Normals[i].Add(p.Normals[i+1]).Add(p.Normals[i+2])) < 0 {
+				inward++
+			}
+		}
+		if inward > 0 {
+			t.Errorf("%s: %d of %d triangles wound against their normals", p.Name, inward, len(p.Positions)/3)
+		}
+	}
+}
