@@ -5,7 +5,7 @@ import "image/color"
 // Part is a piece of the model at rest (yaw 0, pitch 0) in the robot's space (millimetres, Y up,
 // facing +Z, the yaw axis through x = 0, z = 0), for other renderers (e.g. glTF for a browser).
 type Part struct {
-	Name  string     // plate, servo, servo-cover, pitch-servo, body, led-bar-left, led-bar-right, back-panel, core
+	Name  string     // plate, servo, servo-cover, pitch-servo, body, led-bar-left, led-bar-right, back-panel, top-board, core
 	Joint string     // what moves it: "base" (nothing), "yaw" (turns about the yaw axis), "head" (yaw, then pitch about PitchPivot)
 	Color color.RGBA // its base colour (details such as the screen, ports and labels are drawn, not modelled)
 	// Triangles, three positions each, and a normal per position.
@@ -29,11 +29,11 @@ func Parts() []Part {
 	names := map[key]string{
 		{partPlate, matPlate}: "plate", {partServo, matServo}: "servo", {partServo, matServoCover}: "servo-cover",
 		{partBody, matBody}: "body", {partBody, matBackPanel}: "back-panel", {partCore, matCore}: "core",
-		{partServo, matPitchServo}: "pitch-servo",
+		{partServo, matPitchServo}: "pitch-servo", {partBody, matTopBoard}: "top-board",
 	}
 	joints := map[int]string{partPlate: "base", partServo: "yaw", partBody: "head", partCore: "head"}
 	colours := map[int]rgb{matPlate: colPlate, matServo: colDisc, matServoCover: colServo, matBody: colShell,
-		matBar: colBarOff, matBackPanel: colShell, matCore: colShell, matPitchServo: colMotor}
+		matBar: colBarOff, matBackPanel: colShell, matCore: colShell, matPitchServo: colMotor, matTopBoard: colShell}
 	byName := map[string]*Part{}
 	var order []string
 	for _, t := range mesh() {
@@ -78,6 +78,8 @@ func Surface(part string, p, n V3) (c color.RGBA, glass bool) {
 		sf = sc.body(p, n, matBody)
 	case "back-panel":
 		sf = sc.body(p, n, matBackPanel)
+	case "top-board":
+		sf = sc.body(p, n, matTopBoard)
 	case "led-bar-left", "led-bar-right":
 		sf = sc.body(p, n, matBar)
 	case "plate":

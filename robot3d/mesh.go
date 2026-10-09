@@ -50,6 +50,7 @@ const (
 	matBackPanel // the upper back: a sticker and two ports
 	matCore
 	matPitchServo // the pitch servo (Feetech SCS0009, black), in the servo body's pocket
+	matTopBoard   // the head's top behind the CoreS3: the touch pads, the IR LED and receiver, ports B and C
 )
 
 // The pitch servo, drawn (M5Stack's files leave the servos out): the pocket the servo body
@@ -66,6 +67,11 @@ const (
 	barY0, barY1 = robotH - 1.8, robotH - 0.4
 	backPanelZ   = bodyFront - 46.7 + 1.6
 	backPanelY0  = robotH - 29 // its lower edge, from the photo of the back: the servo body shows below it
+	// The top board fills the opening M5Stack's main body leaves in its top behind the CoreS3
+	// (M5Stack's annotated picture of the robot: touch pads x 3, IR Tx / Rx, GPIO port B, UART port C).
+	topBoardX              = 21.0
+	topBoardZ0, topBoardZ1 = 12.6, bodyFront
+	topBoardY              = robotH - 0.3 // a little under the top's edge
 )
 
 type vert struct{ p, n V3 } // at rest, in the robot's space
@@ -107,6 +113,8 @@ func mesh() []tri {
 		}
 		add(roundedBox(V3{25.6, (robotH - 1.2 - backPanelY0) / 2, 0.5}, 0.4, 1, partBody, matBackPanel),
 			V3{0, (robotH - 1.2 + backPanelY0) / 2, backPanelZ})
+		add(roundedBox(V3{topBoardX, 0.8, (topBoardZ1 - topBoardZ0) / 2}, 0.2, 1, partBody, matTopBoard),
+			V3{0, topBoardY - 0.8, (topBoardZ0 + topBoardZ1) / 2})
 		meshTris = m
 	})
 	return meshTris

@@ -141,6 +141,13 @@ func (s *scene) body(p, n V3, mat int) surface {
 			}
 		}
 		s.barGlow(p.Z, p.Y, p.X > 0, &sf)
+	case mat == matTopBoard && n.Y > 0.9: // from the left (+X): port C, the IR window, port B
+		switch {
+		case box(p.X, p.Z, 13.5, 13.6, 18.5, 17.2), box(p.X, p.Z, -18.5, 13.6, -13.5, 17.2):
+			sf.albedo, sf.spec = colPortDark, 0.1
+		case box(p.X, p.Z, 1.5, 14.2, 5.0, 16.6):
+			sf.albedo, sf.spec = hex(0x111216), 0.6
+		}
 	case mat == matBackPanel && n.Z < -0.9:
 		switch {
 		case box(p.X, p.Y, -13, top-7, 6, top-1):
