@@ -91,12 +91,12 @@ func (s *scene) core(p, n V3) surface {
 				}
 			}
 		}
-	case n.Y < -0.97: // the bottom: the microSD slot, a hole, two slits, the reboot button (M5Stack's photo)
+	case n.Y < -0.97: // the bottom: the microSD slot, the red power LED, two slits, the reboot button (M5Stack's photos)
 		switch {
 		case box(p.X, p.Z, -13, -0.5, 0, 0.5):
 			sf.albedo, sf.spec = colPortDark, 0.1
-		case math.Hypot(p.X-6.8, p.Z-3.35) < 0.35:
-			sf.albedo = colPortDark
+		case math.Hypot(p.X-6.8, p.Z-3.35) < 0.45: // the power / charge LED (red; M5Stack's photo of the bottom)
+			sf.albedo, sf.emissive = hex(0xc8281e), hex(0xc8281e).mul(0.5)
 		case box(p.X, p.Z, 6.0, -4.6, 6.5, -3.0), box(p.X, p.Z, 7.1, -4.6, 7.6, -3.0):
 			sf.albedo = colPortDark
 		}
