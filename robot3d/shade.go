@@ -23,7 +23,7 @@ var (
 	colPortDark = hex(0x1c1d20)
 	colPortBlue = hex(0x2f9be0)
 	colServo    = hex(0x50555b) // the open back: the servo inside
-	colBarOff   = hex(0xb5cfe0) // the LED bar, unlit: a light blue light guide (the owner's photos)
+	colBarOff   = hex(0x9aa5b0) // the LED bar, unlit: a light guide a little darker grey than the shell, bluish (the owner's photos)
 	colRing     = hex(0xc9573e) // the camera's red ring under the screen (the owner's photos)
 	colLens     = hex(0x3a4c56) // the camera's lens
 	colSensor   = hex(0x2a2c31) // the light and proximity sensor's two windows: dark (the owner's photos)
