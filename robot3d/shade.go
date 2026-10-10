@@ -296,7 +296,7 @@ func (t *texture) sample(u, v float64) rgb {
 // material is the plate's and the servo's look.
 func material(mat int) surface {
 	switch mat {
-	case matPlate:
+	case matPlate, matBaseCover:
 		return surface{albedo: colPlate, spec: 0.12, shine: 20}
 	case matServo:
 		return surface{albedo: colDisc, spec: 0.25, shine: 30}

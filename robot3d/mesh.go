@@ -53,6 +53,7 @@ const (
 	matCore
 	matPitchServo // the pitch servo (Feetech SCS0009, black), in the servo body's pocket
 	matTopBoard   // the head's top behind the CoreS3: the touch pads, the IR LED and receiver, ports B and C
+	matBaseCover  // the base's bottom cover (M5Stack's BaseCover.stl): the base's underside is flat
 )
 
 // The pitch servo, drawn (M5Stack's files leave the servos out): the pocket the servo body
@@ -101,6 +102,9 @@ func mesh() []tri {
 		var m []tri
 		// STL anchors: the turntable's centre (base, servo body), the main body's front.
 		m = append(m, stlPart("StackChan-Base.stl", 106.2, -320.2, -32.6, V3{0, 0, 0}, partPlate, matPlate)...)
+		// The base's bottom cover, in its own frame: centred in the base's open underside (its notch
+		// at the base's front notch), flush with the bottom.
+		m = append(m, stlPart("StackChan-BaseCover.stl", -0.53, 18.245, -42.79, V3{0, 0, 0}, partPlate, matBaseCover)...)
 		m = append(m, stlPart("StackChan-ServoBody.stl", 229.45, -320.9, -22.3, V3{0, servoBottom, 0}, partServo, matServo)...)
 		m = append(m, stlPart("StackChan-ServoSideCover.stl", 229.45, -320.9, -22.3, V3{0, servoBottom, 0}, partServo, matServoCover)...)
 		m = append(m, stlPart("StackChan-ServoCover.stl", 229.45, -320.9, -22.3, V3{0, servoBottom, 0}, partServo, matServo)...) // the servo body's top, inside the head
